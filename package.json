@@ -1,0 +1,14 @@
+{
+  "name": "google-sheets-rate-assistant",
+  "version": "0.0.1",
+  "main": "index.js",
+  "scripts": {
+    "run": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "Assists in keeping requests under the free rate limit for applications such as vMix.",
+  "dependencies": {
+    "google-spreadsheet": "^3.3.0"
+  }
+}

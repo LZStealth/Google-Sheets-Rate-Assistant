@@ -1,0 +1,37 @@
+{
+    "outputFolder": "output",
+    "apis": [
+        {
+            "apiKey": "--- API key ---",
+            "documents": [
+                {
+                    "googleDocId": "--- Google Sheet ID ---",
+                    "sheets": [
+                        "-- Sheet Name ---",
+                        "-- 2nd Sheet Name ---"
+                    ],
+                    "pollRate": 1500
+                },
+                {
+                    "googleDocId": "--- 2nd Google Sheet ID ---",
+                    "sheets": [
+                        "Sheet3"
+                    ],
+                    "pollRate": 10000
+                }
+            ]
+        },
+        {
+            "apiKey": "--- 2nd API Key ---",
+            "documents": [
+                {
+                    "googleDocId": "--- 3rd Google Sheet ID ---",
+                    "sheets": [
+                        "Sponsors"
+                    ],
+                    "pollRate": 5000
+                }
+            ]
+        }
+    ]
+}
