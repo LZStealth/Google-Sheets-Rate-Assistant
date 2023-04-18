@@ -7,14 +7,19 @@ const readline = require('readline').createInterface({
 const config = require('./config.json');
 
 const check = new Promise(function (resolve) {
-    var count = 0;
+    var count = 0,
+        position = {};
     config.apis.forEach(function (document, d) {
         var totalRate = 0;
         document.documents.forEach(function (item, i) {
-            count += 1;
+            item.sheets.forEach(function (sh, s) {
+                count += 1;
+                position[d + "" + i + "" + s] = count;
+            });
             totalRate += (60 / (item.pollRate / 1000));
-            config.apis[d].documents[i].sheets.itemNo = count;
+            //config.apis[d].documents[i].sheets.itemNo = count;
         });
+        config.position = position;
         var stdin = process.openStdin();
         if (totalRate > 50) {
             console.log('\n---------- RATE LIMIT WARNING ----------');
@@ -26,18 +31,20 @@ const check = new Promise(function (resolve) {
                     process.exit();
                 }
             });
-        } else if (config.apis.length == count) {
+        } else if (config.apis.length - 1 == d) {
             resolve();
         }
     });
 })
 
 check.then(function () {
+    console.log(config.position);
+    //process.exit();
     console.clear();
     process.stdout.cursorTo(0, 1);
     console.log(`Ctrl+C to kill the application.`);
-    config.apis.forEach(api => {
-        api.documents.forEach(docs => {
+    config.apis.forEach(function (api, d) {
+        api.documents.forEach(function (docs, i) {
             const doc = new GoogleSpreadsheet(docs.googleDocId);
             doc.useApiKey(api.apiKey);
 
@@ -47,17 +54,17 @@ check.then(function () {
                     if (!fs.existsSync(`${config.outputFolder}/${doc.title}/`)) {
                         fs.mkdirSync(`${config.outputFolder}/${doc.title}/`, { recursive: true });
                     }
-                    docs.sheets.forEach(sheet => {
+                    docs.sheets.forEach(function (sheet, s) {
                         (async function () {
                             downloadCSV = await doc.sheetsByTitle[sheet].downloadAsCSV();
                             fs.writeFile(`${config.outputFolder}/${doc.title}/${sheet}.csv`, downloadCSV, function (err) {
                                 if (err) {
                                     return console.log(err);
                                 }
-                                const d = new Date();
-                                process.stdout.cursorTo(0, docs.sheets.itemNo + 2);
+                                const date = new Date();
+                                process.stdout.cursorTo(0, config.position[d + "" + i + "" + s] + 2);
                                 process.stdout.clearLine();
-                                console.log(`"${doc.title} - ${sheet}" last updated at ${pad(d.getHours(), 2)}:${pad(d.getMinutes(), 2)}:${pad(d.getSeconds(), 2)}`);
+                                console.log(`"${doc.title} - ${sheet}" last updated at ${pad(date.getHours(), 2)}:${pad(date.getMinutes(), 2)}:${pad(date.getSeconds(), 2)}`);
                                 process.stdout.cursorTo(31, 1);
                             });
                         }());
@@ -70,7 +77,6 @@ check.then(function () {
 }, function (err) {
     console.log(err);
 })
-
 
 function pad(n, width, z) {
     z = z || '0';
