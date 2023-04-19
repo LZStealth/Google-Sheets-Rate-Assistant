@@ -15,7 +15,7 @@
                 {
                     "googleDocId": "--- 2nd Google Sheet ID ---",
                     "sheets": [
-                        "Sheet3"
+                        "-- Sheet Name ---"
                     ],
                     "pollRate": 10000
                 }
@@ -27,7 +27,7 @@
                 {
                     "googleDocId": "--- 3rd Google Sheet ID ---",
                     "sheets": [
-                        "Sponsors"
+                        "-- Sheet Name ---"
                     ],
                     "pollRate": 5000
                 }
