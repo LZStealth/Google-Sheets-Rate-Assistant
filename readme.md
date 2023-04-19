@@ -40,5 +40,6 @@ Download the .zip of the repository and extract into a folder.
 ```
 
 + Lowest PollRate for a single API key is recommended at 1200 to keep these under the free tier of 60 per minute.
-+ Each API key should be different.
-+ Multiple sheets can be included under each DocumentID and will not add to each APIKey rate limit.
++ Each API key should be different, this is not checked.
++ Multiple documents can be polled from a single key and the rate will be calculated.
++ Multiple sheets can be included under each 'googleDocId' and will not add to each APIKey rate limit.
