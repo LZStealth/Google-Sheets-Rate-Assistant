@@ -38,8 +38,6 @@ const check = new Promise(function (resolve) {
 })
 
 check.then(function () {
-    console.log(config.position);
-    //process.exit();
     console.clear();
     process.stdout.cursorTo(0, 1);
     console.log(`Ctrl+C to kill the application.`);
@@ -51,13 +49,14 @@ check.then(function () {
             setInterval(function () {
                 (async function () {
                     await doc.loadInfo();
-                    if (!fs.existsSync(`${config.outputFolder}/${doc.title}/`)) {
-                        fs.mkdirSync(`${config.outputFolder}/${doc.title}/`, { recursive: true });
+                    var titleClean = doc.title.replace(/[^a-zA-Z0-9 ]/g, '');
+                    if (!fs.existsSync(`${config.outputFolder}/${titleClean}/`)) {
+                        fs.mkdirSync(`${config.outputFolder}/${titleClean}/`, { recursive: true });
                     }
                     docs.sheets.forEach(function (sheet, s) {
                         (async function () {
                             downloadCSV = await doc.sheetsByTitle[sheet].downloadAsCSV();
-                            fs.writeFile(`${config.outputFolder}/${doc.title}/${sheet}.csv`, downloadCSV, function (err) {
+                            fs.writeFile(`${config.outputFolder}/${titleClean}/${sheet.replace(/[^a-zA-Z0-9 ]/g)}.csv`, downloadCSV, function (err) {
                                 if (err) {
                                     return console.log(err);
                                 }
