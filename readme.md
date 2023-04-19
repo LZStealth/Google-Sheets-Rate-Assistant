@@ -1,8 +1,44 @@
-Node must be installed on your system
+## Google Sheets Rate Assistant
 
-open Powershell in the directory
-run 'npm install'
+### Instructions
 
-run the app with 'node index.js'
+First fill out the config.json with the required information.
 
-Lowest PollRate for a single item is recommended at 1200 due to various latencies that could occur.
+
+### Run
+*Node must be installed on your system*
+
+Download the .zip of the repository and extract into a folder.
+
+1. Open Powershell in the directory
+2. run `npm install`
+3. run `node index`
+
+### Config Extract
+
+```
+{
+    "apiKey": "--- API key ---",
+    "documents": [
+        {
+            "googleDocId": "--- Google Sheet ID ---",
+            "sheets": [
+                "-- Sheet Name ---",
+                "-- 2nd Sheet Name ---"
+            ],
+            "pollRate": 1500
+        },
+        {
+            "googleDocId": "--- 2nd Google Sheet ID ---",
+            "sheets": [
+                "-- Sheet Name ---"
+            ],
+            "pollRate": 10000
+        }
+    ]
+}
+```
+
++ Lowest PollRate for a single API key is recommended at 1200 to keep these under the free tier of 60 per minute.
++ Each API key should be different.
++ Multiple sheets can be included under each DocumentID and will not add to each APIKey rate limit.
