@@ -43,8 +43,7 @@ check.then(function () {
     console.log(`Ctrl+C to kill the application.`);
     config.apis.forEach(function (api, d) {
         api.documents.forEach(function (docs, i) {
-            const doc = new GoogleSpreadsheet(docs.googleDocId);
-            doc.useApiKey(api.apiKey);
+            const doc = new GoogleSpreadsheet(docs.googleDocId, { apiKey: api.apiKey});
 
             setInterval(function () {
                 (async function () {
@@ -55,7 +54,12 @@ check.then(function () {
                     }
                     docs.sheets.forEach(function (sheet, s) {
                         (async function () {
-                            downloadCSV = await doc.sheetsByTitle[sheet].downloadAsCSV();
+                            try {
+                                downloadCSV = await doc.sheetsByTitle[sheet].downloadAsCSV();
+                            } catch (error) {
+                                console.log(`Sheet '${sheet}' does not exist in document '${doc.title}', check your config file.`);
+                                process.exit();
+                            }
                             fs.writeFile(`${config.outputFolder}/${titleClean}/${sheet.replace(/[^a-zA-Z0-9 ]/g)}.csv`, downloadCSV, function (err) {
                                 if (err) {
                                     return console.log(err);
