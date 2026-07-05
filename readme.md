@@ -1,45 +1,59 @@
-## Google Sheets Rate Assistant
+# Google Sheets Rate Assistant
 
-### Instructions
+This Node.js application pulls configured Google Sheets documents and exports them as CSV files.
 
-First fill out the config.json with the required information.
+## Setup
 
+1. Copy `config.example.json` to `config.json`.
+2. Configure authentication in `config.json` — choose one of:
 
-### Run
-*Node must be installed on your system*
+- Service account: place your service account JSON in `credentials.json` and set `credentialsPath`, or add one or more entries to the `serviceAccounts` array (each entry may be a path string or an object with `path`/`credentialsPath` and optional `rateLimitPerMinute`).
+- API keys: add one or more API keys to the `apiKeys` array in `config.json` (each entry may be a string or an object with `key` and optional `rateLimitPerMinute`).
 
-Download the .zip of the repository and extract into a folder.
+3. Install dependencies:
 
-1. Open Powershell in the directory
-2. run `npm install`
-3. run `node index`
+  npm install
 
-### Config Extract
+4. Run the application:
 
-```
+  node index.js
+
+## Setup Guides
+
+For detailed instructions on authentication methods, please refer to the following guides:
+
+- [Service Account Setup](./GUIDE_SERVICE_ACCOUNT.md)
+- [API Key Setup Guide](./GUIDE_API_KEY.md)
+
+### Sample `config.json`
+
+Here is an example `config.json` matching the repository's `config.example.json`:
+
+```json
 {
-    "apiKey": "--- API key ---",
-    "documents": [
-        {
-            "googleDocId": "--- Google Sheet ID ---",
-            "sheets": [
-                "-- Sheet Name ---",
-                "-- 2nd Sheet Name ---"
-            ],
-            "pollRate": 1500
-        },
-        {
-            "googleDocId": "--- 2nd Google Sheet ID ---",
-            "sheets": [
-                "-- Sheet Name ---"
-            ],
-            "pollRate": 10000
-        }
-    ]
+  "apiKeys": [
+    { "key": "YOUR_API_KEY_1", "rateLimitPerMinute": 50 },
+    { "key": "YOUR_API_KEY_2", "rateLimitPerMinute": 50 }
+  ],
+  "serviceAccounts": [
+    { "path": "credentials.json", "rateLimitPerMinute": 50 }
+  ],
+  "documents": [
+    {
+      "documentId": "YOUR_SPREADSHEET_ID",
+      "outputDir": "output/your-document",
+      "sheets": [
+        { "name": "Sheet1", "outputFilename": "sheet1.csv" }
+      ]
+    }
+  ]
 }
 ```
 
-+ Lowest PollRate for a single API key is recommended at 1200 to keep these under the free tier of 60 per minute.
-+ Each API key should be different, this is not checked.
-+ Multiple documents can be polled from a single key and the rate will be calculated.
-+ Multiple sheets can be included under each 'googleDocId' and will not add to each APIKey rate limit.
+## Rate limiting
+
+The app enforces a maximum of `rateLimitPerMinute` requests per minute to avoid exceeding API limits.
+
+## Output
+
+CSV files are written to `output` by default. Individual documents may override this with their own `outputDir` in `config.json`.

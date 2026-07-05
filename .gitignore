@@ -1,5 +1,32 @@
-.vscode
-node_modules
-output
-package-lock.json
+# Node modules
+node_modules/
+
+# Project outputs
+output/
+coverage/
+dist/
+
+# Credentials and config (do NOT commit secrets)
+credentials.json
+credentials-*.json
 config.json
+config-*.json
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log
+yarn-error.log
+
+# Editor directories
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+.cache/

@@ -1,0 +1,30 @@
+{
+  "apiKeys": [
+    {
+      "key": "YOUR_API_KEY_1",
+      "rateLimitPerMinute": 50
+    },
+    {
+      "key": "YOUR_API_KEY_2",
+      "rateLimitPerMinute": 50
+    }
+  ],
+  "serviceAccounts": [
+    {
+      "path": "credentials.json",
+      "rateLimitPerMinute": 50
+    }
+  ],
+  "documents": [
+    {
+      "documentId": "YOUR_SPREADSHEET_ID",
+      "outputDir": "output/your-document",
+      "sheets": [
+        {
+          "name": "Sheet1",
+          "outputFilename": "sheet1.csv"
+        }
+      ]
+    }
+  ]
+}
