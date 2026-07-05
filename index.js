@@ -231,11 +231,9 @@ function sleep(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
-// === Error formatting / interpretation ===
-
 // === Main scheduler ===
 // Orchestrates startup, selects the appropriate fetcher (API keys,
-// service accounts, or single credentials), and runs the periodic loop.
+// service accounts), and runs the periodic loop.
 async function scheduleRuns() {
   const config = loadConfig();
   try {
