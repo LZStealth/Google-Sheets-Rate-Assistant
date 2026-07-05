@@ -13,12 +13,26 @@
     {
       "path": "credentials.json",
       "rateLimitPerMinute": 50
+    },
+    {
+      "path": "credentials_2.json",
+      "rateLimitPerMinute": 50
     }
   ],
   "documents": [
     {
       "documentId": "YOUR_SPREADSHEET_ID",
       "outputDir": "output/your-document",
+      "sheets": [
+        {
+          "name": "Sheet1",
+          "outputFilename": "sheet1.csv"
+        }
+      ]
+    },
+    {
+      "documentId": "YOUR_SPREADSHEET_ID_2",
+      "outputDir": "output/your-document-2",
       "sheets": [
         {
           "name": "Sheet1",

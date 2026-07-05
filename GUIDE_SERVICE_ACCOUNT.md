@@ -37,14 +37,20 @@ This guide explains how to create a Google service account, enable the Sheets AP
 
 ## 5. Configure the project
 
-In `config.json`, set the `credentialsPath` field to the JSON file path, and remove any `apiKey` or `apiKeys` entries if you are using service account auth.
-
-Example:
+In `config.json`, add the service account credentials under the `serviceAccounts` array. Here's an example using service account authentication:
 
 ```json
 {
-  "credentialsPath": "credentials.json",
-  "rateLimitPerMinute": 50,
+  "serviceAccounts": [
+    {
+      "path": "credentials.json",
+      "rateLimitPerMinute": 50
+    },
+    {
+      "path": "credentials.json",
+      "rateLimitPerMinute": 50
+    }
+  ],
   "documents": [
     {
       "documentId": "YOUR_SPREADSHEET_ID",
@@ -59,3 +65,5 @@ Example:
   ]
 }
 ```
+
+The app will round-robin requests across configured accounts and respect `rateLimitPerMinute` values.

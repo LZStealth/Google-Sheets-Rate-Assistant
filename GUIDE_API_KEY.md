@@ -45,16 +45,3 @@ To configure multiple keys with per-key rate limits:
 ```
 
 The app will round-robin requests across configured keys and respect `rateLimitPerMinute` values.
-
-## Storing keys safely
-
-- Do not commit `config.json` with keys to version control. Add `config.json` to `.gitignore`.
-- Alternatively, keep a `config.json.example` in the repo and place the real keys in a local `config.json`.
-- If you prefer to use environment variables, you can have a small loader script that reads an env var and writes `config.json` before running the app.
-
-## Troubleshooting
-
-- If you get quota or 403 errors, check API restrictions, project quotas, and whether the key is restricted to the wrong IP/referrer.
-- Use multiple keys to spread requests if you hit per-key quotas.
-
-*** End of guide ***
