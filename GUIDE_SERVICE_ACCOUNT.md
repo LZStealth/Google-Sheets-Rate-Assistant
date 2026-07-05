@@ -47,7 +47,7 @@ In `config.json`, add the service account credentials under the `serviceAccounts
       "rateLimitPerMinute": 50
     },
     {
-      "path": "credentials.json",
+      "path": "credentials_2.json",
       "rateLimitPerMinute": 50
     }
   ],
