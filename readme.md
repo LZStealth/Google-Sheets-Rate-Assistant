@@ -7,7 +7,7 @@ This Node.js application pulls configured Google Sheets documents and exports th
 1. Copy `config.example.json` to `config.json`.
 2. Configure authentication in `config.json` — choose one of:
 
-- Service account: place your service account JSON in `credentials.json` and set `credentialsPath`, or add one or more entries to the `serviceAccounts` array (each entry may be a path string or an object with `path`/`credentialsPath` and optional `rateLimitPerMinute`).
+- Service account: place your service account JSON in `credentials.json` and set `credentialsPath`, or add one or more entries to the `serviceAccounts` array (each entry may be a path string or an object with `path` and optional `rateLimitPerMinute`).
 - API keys: add one or more API keys to the `apiKeys` array in `config.json` (each entry may be a string or an object with `key` and optional `rateLimitPerMinute`).
 
 3. Install dependencies:
