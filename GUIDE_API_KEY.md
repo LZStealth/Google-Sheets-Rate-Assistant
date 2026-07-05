@@ -21,17 +21,9 @@ This guide explains how to create and configure API keys for use with the Google
   - API restrictions: select **Google Sheets API** only.
 - Do not leave keys unrestricted in production.
 
-## Example `config.json` snippet
+## Configure the project
 
-To configure one key:
-
-```json
-{
-  "apiKeys": [
-    "YOUR_API_KEY_1"
-  ]
-}
-```
+In `config.json`, add the keys under the `apiKeys` array. Here's an example using apiKeys:
 
 To configure multiple keys with per-key rate limits:
 

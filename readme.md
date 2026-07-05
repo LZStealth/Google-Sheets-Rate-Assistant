@@ -36,19 +36,23 @@ Here is an example `config.json` matching the repository's `config.example.json`
     { "key": "YOUR_API_KEY_2", "rateLimitPerMinute": 50 }
   ],
   "serviceAccounts": [
-    { "path": "credentials.json", "rateLimitPerMinute": 50 }
+    { "path": "credentials.json", "rateLimitPerMinute": 50 },
+    { "path": "credentials_2.json", "rateLimitPerMinute": 50 }
   ],
   "documents": [
     {
       "documentId": "YOUR_SPREADSHEET_ID",
       "outputDir": "output/your-document",
       "sheets": [
-        { "name": "Sheet1", "outputFilename": "sheet1.csv" }
+        { "name": "Sheet1", "outputFilename": "sheet1.csv" },
+        { "name": "Sheet2", "outputFilename": "sheet2.csv" }
       ]
     }
   ]
 }
 ```
+
+Your `config.json` should ONLY contain `apiKeys` OR `serviceAccounts`.
 
 ## Rate limiting
 
