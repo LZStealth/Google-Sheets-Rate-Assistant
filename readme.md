@@ -57,6 +57,7 @@ Your `config.json` should ONLY contain `apiKeys` OR `serviceAccounts`.
 ## Rate limiting
 
 The app enforces a maximum of `rateLimitPerMinute` requests per minute to avoid exceeding API limits.
+There is a 5% buffer applied to any limitation to cater for any network fluctuations. A rate limit of 50 will only call 47.5 times (rounded down to 47).
 
 ## Output
 
