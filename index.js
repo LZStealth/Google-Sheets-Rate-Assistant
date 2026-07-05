@@ -172,15 +172,15 @@ function formatStatusTimestamp(date = new Date()) {
 // === Execution / saving ===
 // Functions that execute per-document fetches and write CSV outputs.
 
-function writeCsv(outputPath, rows) {
+async function writeCsv(outputPath, rows) {
   const csv = stringify(rows, {
     header: false,
     quoted: true,
   });
-  fs.writeFileSync(outputPath, csv, 'utf8');
+  await fs.promises.writeFile(outputPath, csv, 'utf8');
 }
 
-async function executeDocumentGroup(group, fetcher) {
+function executeDocumentGroup(group, fetcher) {
   const sheetNames = group.sheets.map(sheet => sheet.sheetName);
 
   for (const sheet of group.sheets) {
@@ -188,19 +188,38 @@ async function executeDocumentGroup(group, fetcher) {
     setTaskStatus(`${group.documentId}:${sheet.sheetName}`, `${displayName} - pulling...`);
   }
 
-  const rowsBySheet = await fetcher(group.documentId, sheetNames);
+  // Run the actual fetch/write flow in the background so the scheduler doesn't pause.
+  (async () => {
+    try {
+      const rowsBySheet = await fetcher(group.documentId, sheetNames);
 
-  for (const sheet of group.sheets) {
-    const rows = rowsBySheet[sheet.sheetName] || [];
-    writeCsv(sheet.outputPath, rows);
-    const relativePath = path.relative(process.cwd(), sheet.outputPath) || sheet.outputPath;
-    const timestamp = formatStatusTimestamp();
-    const displayName = `${group.documentDisplayName || group.documentId}:${sheet.sheetName}`;
-    setTaskStatus(
-      `${group.documentId}:${sheet.sheetName}`,
-      `${displayName} - saved to ${relativePath} (updated ${timestamp})`
-    );
-  }
+      for (const sheet of group.sheets) {
+        const rows = rowsBySheet[sheet.sheetName] || [];
+        try {
+          await writeCsv(sheet.outputPath, rows);
+          const relativePath = path.relative(process.cwd(), sheet.outputPath) || sheet.outputPath;
+          const timestamp = formatStatusTimestamp();
+          const displayName = `${group.documentDisplayName || group.documentId}:${sheet.sheetName}`;
+          setTaskStatus(
+            `${group.documentId}:${sheet.sheetName}`,
+            `${displayName} - saved to ${relativePath} (updated ${timestamp})`
+          );
+        } catch (writeErr) {
+          setTaskStatus(
+            `${group.documentId}:${sheet.sheetName}`,
+            `${group.documentId}:${sheet.sheetName} - failed to save: ${formatGoogleError(writeErr)}`
+          );
+        }
+      }
+    } catch (err) {
+      for (const sheet of group.sheets) {
+        setTaskStatus(
+          `${group.documentId}:${sheet.sheetName}`,
+          `${group.documentId}:${sheet.sheetName} - failed: ${interpretGoogleSheetsError(err, group.documentId, sheet.sheetName)}`
+        );
+      }
+    }
+  })();
 }
 
 function formatGoogleError(err) {
@@ -334,7 +353,9 @@ async function scheduleRuns() {
     currentIndex = (currentIndex + 1) % groups.length;
 
     try {
-      await executeDocumentGroup(group, fetcher);
+      // Fire off the document fetch/save in the background and don't await it,
+      // so the scheduler can continue to the next group immediately.
+      executeDocumentGroup(group, fetcher);
     } catch (err) {
       for (const sheet of group.sheets) {
         setTaskStatus(
