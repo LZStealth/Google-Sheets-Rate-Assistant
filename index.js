@@ -283,7 +283,7 @@ async function scheduleRuns() {
     }
   }
 
-  // build a context for fetching titles: prefer API key, then first service account, then single-auth if present
+  // build a context for fetching titles: prefer API key, then first service account
   let titleContext = null;
   if (firstApiKey) {
     titleContext = {apiKey: firstApiKey};
@@ -325,7 +325,7 @@ async function scheduleRuns() {
 
   const totalRateLimit = getTotalRateLimitPerMinute(config);
   const intervalMs = Math.max(1, Math.ceil(60000 / totalRateLimit));
-  console.log(`Configured for ${totalRateLimit} requests per minute across ${tasks.length} tasks (${intervalMs}ms interval)`);
+  console.log(`Configured for ${totalRateLimit} requests per minute across ${groups.length} documents (${intervalMs}ms interval)`);
   initializeTaskStatuses(tasks);
 
   let currentIndex = 0;
