@@ -64,3 +64,8 @@ There is a 5% buffer applied to any limitation to cater for any network fluctuat
 ## Output
 
 CSV files are written to `output` by default. Individual documents may override this with their own `outputDir` in `config.json`.
+
+## AI Disclosure
+
+A large chunk of the project was coded using AI, this is the first pass at integrating some AI assistance into my projects. However all code written has been verified and checked before submission. AI use has only been included since the v2 rewrite.
+While this project isn't intended for general usage i've chosen to be clear on the subject.
