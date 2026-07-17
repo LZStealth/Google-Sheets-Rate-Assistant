@@ -1,0 +1,33 @@
+name: build-windows-exe
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BUILD_VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows executable
+        run: npm run build:win
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gSheets-Rate-Assistant-${{ github.ref_name }}
+          path: dist/gSheets-Rate-Assistant-${{ github.ref_name }}.exe

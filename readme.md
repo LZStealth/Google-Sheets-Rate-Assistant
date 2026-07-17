@@ -4,19 +4,12 @@ This Node.js application pulls configured Google Sheets documents and exports th
 
 ## Setup
 
-1. Copy `config.example.json` to `config.json`.
-2. Configure authentication in `config.json` — choose one of:
+1. Download and run the latest version.
+2. If `config.json` does not exist, the app will ask whether you want a wizard or a starter config file.
+3. If you choose the config-file path instead of the wizard, configure authentication in `config.json` — choose one of:
 
 - Service account: place your service account JSON in `credentials.json` and set `credentialsPath`, or add one or more entries to the `serviceAccounts` array (each entry may be a path string or an object with `path` and optional `rateLimitPerMinute`).
 - API keys: add one or more API keys to the `apiKeys` array in `config.json` (each entry may be a string or an object with `key` and optional `rateLimitPerMinute`).
-
-3. Install dependencies:
-
-  npm install
-
-4. Run the application:
-
-  node index.js
 
 ## Setup Guides
 
@@ -63,7 +56,23 @@ There is a 5% buffer applied to any limitation to cater for any network fluctuat
 
 ## Output
 
-CSV files are written to `output` by default. Individual documents may override this with their own `outputDir` in `config.json`.
+CSV files are written to `output` by default. The onboarding wizard uses that output directory automatically and names each file after the sheet.
+
+If `config.json` is missing, the app creates a starter file next to the executable when packaged, or in the current working directory when running from source, and exits so you can fill it in before the next run.
+
+If you choose the wizard, it will ask for the auth method, credential count, document count, and sheet names. It will not ask for output directories or file names.
+
+## Windows Packaging
+
+To build a Windows executable from source, run:
+
+```bash
+npm run build:win
+```
+
+That creates `dist/gSheets-Rate-Assistant-v2.0.0.exe` using the current version in the filename. For distribution, ship the exe alongside a `config.json` and any service account credential files, or set `GSA_CONFIG` to point at a different config file.
+
+Gitea now builds only on version tags like `v1.1.1` through the workflow in `.gitea/workflows/build.yml`.
 
 ## AI Disclosure
 

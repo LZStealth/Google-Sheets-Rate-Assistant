@@ -6,21 +6,22 @@
 const fs = require('fs');
 const path = require('path');
 const {google} = require('googleapis');
-const stringifyModule = require('csv-stringify/sync');
+const stringifyModule = require('./node_modules/csv-stringify/dist/cjs/sync.cjs');
 const stringify = typeof stringifyModule === 'function'
   ? stringifyModule
   : stringifyModule.default || stringifyModule.stringify || stringifyModule;
-const {loadConfig, resolveOutputPath, validateConfig} = require('./lib/config');
+const {loadConfig, resolveOutputPath} = require('./lib/config');
 const {buildThrottle, applyRateLimitBuffer, getTotalRateLimitPerMinute} = require('./lib/rate');
+const {runOnboarding} = require('./lib/onboarding');
 const authHelpers = require('./lib/auth');
 const {createApiKeyBatchFetcher, createServiceAccountBatchFetcher, getFirstApiKey, getFirstServiceAccountAuthClient, loadAuth} = authHelpers;
 
 // === Status rendering / console display ===
 // Renders per-sheet status lines when running in a TTY, updating in-place.
 
-function mapDocumentToFilename(documentConfig, sheetName) {
+function mapDocumentToFilename(sheetName) {
   const safeName = sheetName.replace(/[\\/:*?"<>|]/g, '_');
-  return `${documentConfig.documentId}-${safeName}.csv`;
+  return `${safeName}.csv`;
 }
 
 const statusManager = {
@@ -109,7 +110,7 @@ function buildDocumentGroups(config) {
 
     for (const sheetConfig of documentConfig.sheets) {
       const name = typeof sheetConfig === 'string' ? sheetConfig : sheetConfig.name;
-      const outputFilename = sheetConfig.outputFilename || mapDocumentToFilename(documentConfig, name);
+      const outputFilename = sheetConfig.outputFilename || mapDocumentToFilename(name);
       const outputPath = resolveOutputPath(documentOutputDir, outputFilename);
 
       sheets.push({
@@ -250,17 +251,65 @@ function sleep(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
+function waitForEnter() {
+  if (!process.stdin || (!process.stdin.isTTY && !(process.stdout && process.stdout.isTTY))) {
+    return Promise.resolve();
+  }
+
+  return new Promise(resolve => {
+    const readline = require('readline');
+    const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+    rl.question('Press Enter to close this window...', () => {
+      rl.close();
+      resolve();
+    });
+  });
+}
+
+function formatError(err) {
+  if (!err) {
+    return 'Unknown error';
+  }
+
+  if (err.message) {
+    return err.message;
+  }
+
+  return String(err);
+}
+
+function isUserFacingError(err) {
+  if (!err) {
+    return false;
+  }
+
+  const message = formatError(err);
+  return /config\.json|api key|service account|spreadsheet|sheet|credential|document/i.test(message);
+}
+
+async function handleFatalError(err, prefix = 'Application error:') {
+  const message = formatError(err);
+  const friendlyPrefix = prefix || 'Application error:';
+
+  console.error(friendlyPrefix);
+
+  if (isUserFacingError(err)) {
+    console.error(message);
+  } else {
+    console.error('Something went wrong.');
+    if (message && message !== 'Unknown error') {
+      console.error(message);
+    }
+  }
+
+  await waitForEnter();
+  process.exit(1);
+}
+
 // === Main scheduler ===
 // Orchestrates startup, selects the appropriate fetcher (API keys,
 // service accounts), and runs the periodic loop.
-async function scheduleRuns() {
-  const config = loadConfig();
-  try {
-    validateConfig(config);
-  } catch (e) {
-    console.error('Configuration error:', e.message);
-    process.exit(1);
-  }
+async function scheduleRuns(config) {
   const apiBatchFetcher = createApiKeyBatchFetcher(config);
   const svcBatchFetcher = createServiceAccountBatchFetcher(config);
   let fetcher;
@@ -370,8 +419,35 @@ async function scheduleRuns() {
 }
 
 if (require.main === module) {
-  scheduleRuns().catch(err => {
-    console.error('Application error:', err.message || err);
-    process.exit(1);
+  process.on('uncaughtException', err => {
+    handleFatalError(err, 'Unexpected error:').catch(() => process.exit(1));
   });
+
+  process.on('unhandledRejection', err => {
+    handleFatalError(err, 'Unexpected error:').catch(() => process.exit(1));
+  });
+
+  (async () => {
+    try {
+      let config;
+
+      try {
+        config = loadConfig();
+      } catch (err) {
+        if (err && err.code === 'ERR_CONFIG_MISSING') {
+          const onboardingResult = await runOnboarding();
+          if (onboardingResult && onboardingResult.mode === 'config') {
+            return;
+          }
+          config = onboardingResult.config;
+        } else {
+          throw err;
+        }
+      }
+
+      await scheduleRuns(config);
+    } catch (err) {
+      handleFatalError(err, 'Configuration error:').catch(() => process.exit(1));
+    }
+  })();
 }
