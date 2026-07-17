@@ -5,7 +5,7 @@
 // === Imports & constants ===
 const fs = require('fs');
 const path = require('path');
-const {google} = require('googleapis');
+const readline = require('readline');
 const stringifyModule = require('./node_modules/csv-stringify/dist/cjs/sync.cjs');
 const stringify = typeof stringifyModule === 'function'
   ? stringifyModule
@@ -14,6 +14,7 @@ const {loadConfig, resolveOutputPath} = require('./lib/config');
 const {buildThrottle, applyRateLimitBuffer, getTotalRateLimitPerMinute} = require('./lib/rate');
 const {runOnboarding} = require('./lib/onboarding');
 const authHelpers = require('./lib/auth');
+const {fetchSpreadsheetTitle, fetchSpreadsheetValuesBatch} = require('./lib/sheets');
 const {createApiKeyBatchFetcher, createServiceAccountBatchFetcher, getFirstApiKey, getFirstServiceAccountAuthClient, loadAuth} = authHelpers;
 
 // === Status rendering / console display ===
@@ -26,10 +27,35 @@ function mapDocumentToFilename(sheetName) {
 
 const statusManager = {
   keys: [],
+  lineIndexes: new Map(),
   statuses: new Map(),
-  lastRenderLines: 0,
+  anchorSaved: false,
   enabled: process.stdout && process.stdout.isTTY,
 };
+
+function clearConsoleForRun() {
+  if (process.stdout && process.stdout.isTTY && typeof console.clear === 'function') {
+    console.clear();
+    return;
+  }
+
+  if (process.stdout && typeof process.stdout.write === 'function') {
+    process.stdout.write('\u001b[2J\u001b[0f');
+  }
+}
+
+function limitToTerminalWidth(text) {
+  const width = Math.max(20, (process.stdout && process.stdout.columns) || 80);
+  if (text.length <= width) {
+    return text;
+  }
+
+  if (width <= 1) {
+    return text.slice(0, width);
+  }
+
+  return text.slice(0, width - 1) + '…';
+}
 
 // === Document grouping & mapping ===
 // Map `config.documents` entries to internal groups with resolved output paths.
@@ -39,31 +65,54 @@ function renderStatusBlock() {
     return;
   }
 
-  if (statusManager.lastRenderLines > 0) {
-    process.stdout.write(`\x1B[${statusManager.lastRenderLines}F`);
-  }
+  process.stdout.write('\u001b[s');
 
-  for (const key of statusManager.keys) {
+  statusManager.keys.forEach((key, index) => {
     const statusText = statusManager.statuses.get(key) || `${key} - pending`;
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    process.stdout.write(statusText + '\n');
+    readline.cursorTo(process.stdout, 0);
+    readline.clearLine(process.stdout, 0);
+    process.stdout.write(limitToTerminalWidth(statusText));
+    if (index < statusManager.keys.length - 1) {
+      process.stdout.write('\n');
+    }
+  });
+
+  statusManager.anchorSaved = true;
+}
+
+function updateStatusLine(taskId, statusText) {
+  if (!statusManager.enabled || !statusManager.anchorSaved) {
+    return;
   }
 
-  statusManager.lastRenderLines = statusManager.keys.length;
+  const lineIndex = statusManager.lineIndexes.get(taskId);
+  if (lineIndex === undefined) {
+    return;
+  }
+
+  process.stdout.write('\u001b[u');
+  if (lineIndex > 0) {
+    readline.moveCursor(process.stdout, 0, lineIndex);
+  }
+  readline.cursorTo(process.stdout, 0);
+  readline.clearLine(process.stdout, 0);
+  process.stdout.write(limitToTerminalWidth(statusText));
+  process.stdout.write('\u001b[u');
 }
 
 function setTaskStatus(taskId, statusText) {
   statusManager.statuses.set(taskId, statusText);
-  renderStatusBlock();
+  updateStatusLine(taskId, statusText);
 }
 
 function initializeTaskStatuses(tasks) {
   statusManager.keys = tasks.map(task => `${task.documentId}:${task.sheetName}`);
+  statusManager.lineIndexes.clear();
   statusManager.statuses.clear();
-  statusManager.lastRenderLines = 0;
+  statusManager.anchorSaved = false;
 
-  for (const key of statusManager.keys) {
+  for (const [index, key] of statusManager.keys.entries()) {
+    statusManager.lineIndexes.set(key, index);
     statusManager.statuses.set(key, `${key} - pending`);
   }
 
@@ -72,26 +121,6 @@ function initializeTaskStatuses(tasks) {
 
 // Authentication helpers: see `./lib/auth` for credential loaders and
 // per-credential, throttled batch fetchers (API key and service account modes).
-
-async function fetchSpreadsheetTitle(context, documentId) {
-  const sheetOptions = {version: 'v4'};
-  if (context.authClient) {
-    sheetOptions.auth = context.authClient;
-  }
-
-  const sheets = google.sheets(sheetOptions);
-  const request = {
-    spreadsheetId: documentId,
-    fields: 'properties/title',
-  };
-
-  if (context.apiKey) {
-    request.key = context.apiKey;
-  }
-
-  const response = await sheets.spreadsheets.get(request);
-  return response.data.properties?.title || documentId;
-}
 
 function buildDocumentGroups(config) {
   const groups = [];
@@ -132,31 +161,7 @@ function buildDocumentGroups(config) {
 // `index.js` provides a simple `batchFetchDocumentSheets` fallback used when
 // no per-credential batch fetcher is configured by `./lib/auth`.
 async function batchFetchDocumentSheets(context, documentId, sheetNames) {
-  const sheetOptions = {version: 'v4'};
-  if (context.authClient) {
-    sheetOptions.auth = context.authClient;
-  }
-
-  const sheets = google.sheets(sheetOptions);
-  const request = {
-    spreadsheetId: documentId,
-    ranges: sheetNames,
-  };
-
-  if (context.apiKey) {
-    request.key = context.apiKey;
-  }
-
-  const response = await sheets.spreadsheets.values.batchGet(request);
-  const valueRanges = response.data.valueRanges || [];
-  const rowsBySheet = {};
-
-  for (let i = 0; i < sheetNames.length; i += 1) {
-    const sheetName = sheetNames[i];
-    rowsBySheet[sheetName] = valueRanges[i]?.values || [];
-  }
-
-  return rowsBySheet;
+  return fetchSpreadsheetValuesBatch(context, documentId, sheetNames);
 }
 
 function formatStatusTimestamp(date = new Date()) {
@@ -331,6 +336,8 @@ async function scheduleRuns(config) {
     throw new Error('No sheets configured to pull in config.json');
   }
 
+  console.log('Google Sheets Rate Assistant');
+
   const firstApiKey = getFirstApiKey(config);
   const titleMap = {};
 
@@ -393,7 +400,8 @@ async function scheduleRuns(config) {
 
   const totalRateLimit = getTotalRateLimitPerMinute(config);
   const intervalMs = Math.max(1, Math.ceil(60000 / totalRateLimit));
-  console.log(`Configured for ${totalRateLimit} requests per minute across ${groups.length} documents (${intervalMs}ms interval)`);
+  console.log(limitToTerminalWidth(`Configured for ${totalRateLimit} requests per minute across ${groups.length} documents (${intervalMs}ms interval)`));
+  console.log('');
   initializeTaskStatuses(tasks);
 
   let currentIndex = 0;
@@ -429,6 +437,8 @@ if (require.main === module) {
 
   (async () => {
     try {
+      clearConsoleForRun();
+
       let config;
 
       try {
