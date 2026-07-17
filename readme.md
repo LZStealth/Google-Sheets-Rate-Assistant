@@ -4,9 +4,10 @@ This Node.js application pulls configured Google Sheets documents and exports th
 
 ## Setup
 
-1. Download and run the latest version.
-2. If `config.json` does not exist, the app will ask whether you want a wizard or a starter config file.
-3. If you choose the config-file path instead of the wizard, configure authentication in `config.json` — choose one of:
+Download the latest version from the [Releases tab](./releases) and run it.
+
+1. If `config.json` does not exist, the app will ask whether you want a wizard or a starter config file.
+2. If you choose the config-file path instead of the wizard, configure authentication in `config.json` — choose one of:
 
 - Service account: place your service account JSON in `credentials.json` and set `credentialsPath`, or add one or more entries to the `serviceAccounts` array (each entry may be a path string or an object with `path` and optional `rateLimitPerMinute`).
 - API keys: add one or more API keys to the `apiKeys` array in `config.json` (each entry may be a string or an object with `key` and optional `rateLimitPerMinute`).
