@@ -9,6 +9,7 @@ dist/
 # Credentials and config (do NOT commit secrets)
 credentials.json
 credentials-*.json
+serviceAccounts/
 config.json
 config-*.json
 .env
