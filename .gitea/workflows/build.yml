@@ -37,3 +37,101 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: gSheets-Rate-Assistant ${{ github.ref_name }}
           files: dist/*.exe
+
+      - name: Mirror release to GitHub
+        if: ${{ env.GITHUB_RELEASE_REPO != '' && env.GITHUB_TOKEN != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_RELEASE_REPO: ${{ secrets.GITHUB_RELEASE_REPO }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          token = os.environ["GITHUB_TOKEN"]
+          repository = os.environ["GITHUB_RELEASE_REPO"]
+          tag = os.environ["BUILD_VERSION"]
+          release_name = f"gSheets-Rate-Assistant {tag}"
+          asset_path = next((os.path.join("dist", name) for name in os.listdir("dist") if name.endswith(".exe")), None)
+
+          if asset_path is None:
+            raise SystemExit("No Windows executable found in dist/")
+
+          def request_json(url, method="GET", payload=None, headers=None):
+            request_headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+            }
+            if headers:
+              request_headers.update(headers)
+
+            data = None if payload is None else json.dumps(payload).encode("utf-8")
+            if data is not None:
+              request_headers["Content-Type"] = "application/json"
+
+            request = urllib.request.Request(url, data=data, method=method, headers=request_headers)
+            try:
+              with urllib.request.urlopen(request) as response:
+                body = response.read().decode("utf-8")
+                return json.loads(body) if body else {}
+            except urllib.error.HTTPError as error:
+              message = error.read().decode("utf-8", errors="replace")
+              print(message, file=sys.stderr)
+              raise
+
+          release_url = f"https://api.github.com/repos/{repository}/releases/tags/{urllib.parse.quote(tag)}"
+          release = None
+
+          try:
+            release = request_json(release_url)
+          except urllib.error.HTTPError as error:
+            if error.code != 404:
+              raise
+
+          payload = {
+            "tag_name": tag,
+            "name": release_name,
+            "draft": False,
+            "prerelease": False,
+            "generate_release_notes": False,
+          }
+
+          if release is None:
+            release = request_json(f"https://api.github.com/repos/{repository}/releases", method="POST", payload=payload)
+          else:
+            release = request_json(release["url"], method="PATCH", payload=payload)
+
+          asset_name = os.path.basename(asset_path)
+          for asset in release.get("assets", []):
+            if asset.get("name") == asset_name:
+              request_json(asset["url"], method="DELETE")
+
+          upload_url = release["upload_url"].split("{", 1)[0]
+          with open(asset_path, "rb") as asset_file:
+            asset_data = asset_file.read()
+
+          upload_request = urllib.request.Request(
+            f"{upload_url}?name={urllib.parse.quote(asset_name)}",
+            data=asset_data,
+            method="POST",
+            headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "Content-Type": "application/octet-stream",
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          )
+
+          try:
+            with urllib.request.urlopen(upload_request) as response:
+              response.read()
+          except urllib.error.HTTPError as error:
+            message = error.read().decode("utf-8", errors="replace")
+            print(message, file=sys.stderr)
+            raise
+          PY
