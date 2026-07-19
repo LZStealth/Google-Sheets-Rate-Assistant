@@ -39,10 +39,9 @@ jobs:
           files: dist/*.exe
 
       - name: Mirror release to GitHub
-        if: ${{ env.GITHUB_RELEASE_REPO != '' && env.GITHUB_TOKEN != '' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_RELEASE_REPO: ${{ secrets.GITHUB_RELEASE_REPO }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+          RELEASE_GITHUB_REPO: ${{ secrets.RELEASE_GITHUB_REPO }}
         run: |
           python - <<'PY'
           import json
@@ -52,8 +51,13 @@ jobs:
           import urllib.parse
           import urllib.request
 
-          token = os.environ["GITHUB_TOKEN"]
-          repository = os.environ["GITHUB_RELEASE_REPO"]
+          token = os.environ.get("GITHUB_TOKEN", "")
+          repository = os.environ.get("RELEASE_GITHUB_REPO", "")
+
+          if not token or not repository:
+            print("Skipping GitHub mirror because RELEASE_GITHUB_REPO or RELEASE_GITHUB_TOKEN is missing.")
+            raise SystemExit(0)
+
           tag = os.environ["BUILD_VERSION"]
           release_name = f"gSheets-Rate-Assistant {tag}"
           asset_path = next((os.path.join("dist", name) for name in os.listdir("dist") if name.endswith(".exe")), None)
