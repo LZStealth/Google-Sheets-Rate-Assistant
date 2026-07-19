@@ -63,19 +63,6 @@ If `config.json` is missing, the app creates a starter file next to the executab
 
 If you choose the wizard, it will ask for the auth method, credential count, document count, and sheet names. It will not ask for output directories or file names.
 
-## Windows Packaging
-
-To build a Windows executable from source, run:
-
-```bash
-npm run build:win
-```
-
-That creates `dist/gSheets-Rate-Assistant-v2.1.8.exe` using the current version in the filename. For distribution, ship the exe alongside a `config.json` and any service account credential files, or set `GSA_CONFIG` to point at a different config file.
-
-Gitea now builds only on version tags like `v1.1.1` through the workflow in `.gitea/workflows/build.yml`.
-If you also want the same tag to create a GitHub release, add `RELEASE_GITHUB_TOKEN` and `RELEASE_GITHUB_REPO` as secrets in Gitea so the workflow can mirror the release and upload the Windows asset to GitHub.
-
 ## AI Disclosure
 
 A large chunk of the project was coded using AI, this is the first pass at integrating some AI assistance into my projects. However all code written has been verified and checked before submission. AI use has only been included since the v2 rewrite.
