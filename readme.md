@@ -4,7 +4,7 @@ This Node.js application pulls configured Google Sheets documents and exports th
 
 ## Setup
 
-Download the latest version from the [/releases](/LZStealth/Google-Sheets-Rate-Assistant/releases) and run it.
+Download the latest version from the Releases and run it.
 
 1. If `config.json` does not exist, the app will ask whether you want a wizard or a starter config file.
 2. If you choose the config-file path instead of the wizard, configure authentication in `config.json` — choose one of:
