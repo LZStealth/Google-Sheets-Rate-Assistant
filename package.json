@@ -1,6 +1,6 @@
 {
   "name": "google-sheets-rate-assistant",
-  "version": "2.1.8",
+  "version": "2.1.9",
   "description": "Pull Google Sheets data and export to CSV with configurable schedules and rate limiting.",
   "main": "index.js",
   "bin": "index.js",
