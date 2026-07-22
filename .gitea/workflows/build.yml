@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -28,6 +30,48 @@ jobs:
       - name: Clean dist
         run: rm -f dist/*.exe
 
+      - name: Generate release notes
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import subprocess
+
+          tag = os.environ["BUILD_VERSION"]
+
+          try:
+            previous_tag = subprocess.check_output(
+              ["git", "describe", "--tags", "--abbrev=0", f"{tag}^"],
+              text=True,
+            ).strip()
+          except subprocess.CalledProcessError:
+            previous_tag = ""
+
+          log_range = f"{previous_tag}..{tag}" if previous_tag else tag
+          subjects = subprocess.check_output(
+            ["git", "log", "--pretty=format:%s", log_range],
+            text=True,
+          ).splitlines()
+
+          notes = []
+          for subject in subjects:
+            subject = subject.strip()
+            if not subject:
+              continue
+            if subject.startswith("chore: bump version"):
+              continue
+            if subject.lower() == "no message":
+              continue
+            notes.append(f"- {subject}")
+
+          if not notes:
+            notes = ["- Release build and version bump."]
+
+          body = "## What\'s new\n\n" + "\n".join(notes) + "\n"
+          pathlib.Path("release-notes.md").write_text(body, encoding="utf-8")
+          print(body)
+          PY
+
       - name: Build Windows executable
         run: npm run build:win
 
@@ -36,6 +80,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: gSheets-Rate-Assistant ${{ github.ref_name }}
+          body_path: release-notes.md
           files: dist/*.exe
 
       - name: Mirror release to GitHub
@@ -61,6 +106,8 @@ jobs:
           tag = os.environ["BUILD_VERSION"]
           release_name = f"gSheets-Rate-Assistant {tag}"
           asset_path = next((os.path.join("dist", name) for name in os.listdir("dist") if name.endswith(".exe")), None)
+          with open("release-notes.md", "r", encoding="utf-8") as notes_file:
+            release_notes = notes_file.read()
 
           if asset_path is None:
             raise SystemExit("No Windows executable found in dist/")
@@ -100,6 +147,7 @@ jobs:
           payload = {
             "tag_name": tag,
             "name": release_name,
+            "body": release_notes,
             "draft": False,
             "prerelease": False,
             "generate_release_notes": False,
